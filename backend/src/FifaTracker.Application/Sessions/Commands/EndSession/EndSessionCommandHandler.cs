@@ -1,0 +1,32 @@
+using FifaTracker.Domain.Entities;
+using FifaTracker.Domain.Interfaces;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace FifaTracker.Application.Sessions.Commands.EndSession;
+
+public class EndSessionCommandHandler : IRequestHandler<EndSessionCommand, Unit>
+{
+    private readonly IApplicationDbContext _context;
+
+    public EndSessionCommandHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<Unit> Handle(EndSessionCommand request, CancellationToken cancellationToken)
+    {
+        var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Id == request.SessionId, cancellationToken);
+
+        if (session == null)
+            throw new KeyNotFoundException($"Session with ID {request.SessionId} not found");
+
+        session.Status = SessionStatus.Completed;
+        session.EndDate = DateTime.UtcNow;
+        session.LastModifiedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Unit.Value;
+    }
+}

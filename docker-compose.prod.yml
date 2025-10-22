@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fifatracker-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fifatracker}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ${POSTGRES_DATA_PATH:-postgres_data}:/var/lib/postgresql/data
+    networks:
+      - fifatracker-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Jeśli używasz zewnętrznej bazy, zakomentuj cały ten serwis
+    # profiles: ["with-db"]  # Odkomentuj to, żeby wyłączyć domyślnie
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fifatracker-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-fifatracker}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fifatracker-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
+    container_name: fifatracker-frontend
+    networks:
+      - fifatracker-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: fifatracker-nginx
+    ports:
+      - "3000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - fifatracker-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  fifatracker-network:
+    driver: bridge

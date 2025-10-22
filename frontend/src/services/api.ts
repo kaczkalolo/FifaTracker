@@ -1,0 +1,114 @@
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Types
+export interface User {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface InactiveUser {
+  id: string;
+  name: string;
+  createdAt: string;
+  deactivatedAt: string | null;
+}
+
+export interface SessionSummary {
+  id: string;
+  name: string;
+  startDate: string;
+  status: 'Active' | 'Completed';
+  matchType: 'OneVsOne' | 'TwoVsTwo' | 'TwoVsOne';
+  totalMatches: number;
+  completedMatches: number;
+  participantCount: number;
+}
+
+export interface SessionDetails {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate?: string;
+  status: 'Active' | 'Completed';
+  matchType: 'OneVsOne' | 'TwoVsTwo' | 'TwoVsOne';
+  users: SessionUser[];
+  matches: Match[];
+}
+
+export interface SessionUser {
+  userId: string;
+  userName: string;
+  joinedAt: string;
+}
+
+export interface Match {
+  id: string;
+  isGenerated: boolean;
+  isCompleted: boolean;
+  team1Score?: number;
+  team2Score?: number;
+  playedAt?: string;
+  team1Players: MatchPlayer[];
+  team2Players: MatchPlayer[];
+}
+
+export interface MatchPlayer {
+  userId: string;
+  userName: string;
+}
+
+export interface LeaderboardEntry {
+  userId: string;
+  userName: string;
+  totalMatches: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  goalsScored: number;
+  goalsConceded: number;
+  goalDifference: number;
+  winRate: number;
+  points: number;
+}
+
+// Users API
+export const usersApi = {
+  getAll: () => api.get<User[]>('/users'),
+  getInactive: () => api.get<InactiveUser[]>('/users/inactive'),
+  getLeaderboard: () => api.get<LeaderboardEntry[]>('/users/leaderboard'),
+  create: (name: string) => api.post<string>('/users', { Name: name }),
+  update: (id: string, name: string) => api.put(`/users/${id}`, { Name: name }),
+  delete: (id: string) => api.delete(`/users/${id}`),
+  reactivate: (id: string) => api.post(`/users/${id}/reactivate`),
+};
+
+// Sessions API
+export const sessionsApi = {
+  getAll: () => api.get<SessionSummary[]>('/sessions'),
+  getActive: () => api.get<SessionSummary[]>('/sessions/active'),
+  getById: (id: string) => api.get<SessionDetails>(`/sessions/${id}`),
+  create: (name: string, matchType: string, userIds: string[], generateMatches: boolean = true) =>
+    api.post<string>('/sessions', { Name: name, MatchType: matchType, UserIds: userIds, GenerateMatches: generateMatches }),
+  end: (id: string) => api.post(`/sessions/${id}/end`),
+  addUser: (id: string, userId: string, generateMissingMatches: boolean) =>
+    api.post(`/sessions/${id}/users`, { UserId: userId, GenerateMissingMatches: generateMissingMatches }),
+};
+
+// Matches API
+export const matchesApi = {
+  createCustom: (sessionId: string, team1UserIds: string[], team2UserIds: string[]) =>
+    api.post<string>('/matches', { SessionId: sessionId, Team1UserIds: team1UserIds, Team2UserIds: team2UserIds }),
+  updateScore: (id: string, team1Score: number, team2Score: number) =>
+    api.put(`/matches/${id}/score`, { Team1Score: team1Score, Team2Score: team2Score }),
+  delete: (id: string) => api.delete(`/matches/${id}`),
+};

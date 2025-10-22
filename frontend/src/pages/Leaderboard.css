@@ -1,0 +1,280 @@
+.leaderboard-page {
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.leaderboard-page h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 2.5rem;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.no-data {
+  text-align: center;
+  color: #666;
+  font-size: 1.2rem;
+  margin: 40px 0;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 24px;
+  border: none;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab:hover {
+  background: #f8f9fa;
+}
+
+.tab.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.leaderboard-table-container {
+  overflow-x: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.leaderboard-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.leaderboard-table th {
+  padding: 15px 10px;
+  text-align: center;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.leaderboard-table td {
+  padding: 12px 10px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.leaderboard-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.rank-col {
+  font-size: 1.2rem;
+  width: 60px;
+}
+
+.player-col {
+  text-align: left !important;
+  font-weight: 600;
+  color: #333;
+  min-width: 150px;
+}
+
+.points-col {
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.highlight-col {
+  font-weight: 600;
+}
+
+.wins {
+  color: #10b981;
+}
+
+.draws {
+  color: #000000;
+}
+
+.losses {
+  color: #ef4444;
+}
+
+.black {
+  color: #333;
+}
+
+.positive {
+  color: #10b981;
+}
+
+.negative {
+  color: #ef4444;
+}
+
+.top-1 {
+  background: linear-gradient(90deg, #fff9e6 0%, #ffffff 100%);
+}
+
+.top-2 {
+  background: linear-gradient(90deg, #f5f5f5 0%, #ffffff 100%);
+}
+
+.top-3 {
+  background: linear-gradient(90deg, #fff5f0 0%, #ffffff 100%);
+}
+
+.top-1:hover,
+.top-2:hover,
+.top-3:hover {
+  opacity: 0.9;
+}
+
+.legend {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.legend h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+}
+
+.legend ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.legend li {
+  padding: 5px 0;
+  color: #666;
+}
+
+.legend strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.legend sub {
+  font-size: 0.8em;
+}
+
+@media (max-width: 768px) {
+  .leaderboard-table {
+    font-size: 0.85rem;
+  }
+
+  .tabs {
+    max-width: 100%;
+  }
+
+  .tab {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 8px 5px;
+  }
+
+  .player-col {
+    min-width: 100px;
+  }
+
+  .leaderboard-page h1 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .leaderboard-page {
+    padding: 10px;
+  }
+
+  .leaderboard-page h1 {
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+  }
+
+  .leaderboard-table-container {
+    margin-bottom: 20px;
+    border-radius: 6px;
+  }
+
+  .leaderboard-table {
+    font-size: 0.75rem;
+  }
+
+  .leaderboard-table th {
+    padding: 10px 4px;
+    font-size: 0.7rem;
+  }
+
+  .leaderboard-table td {
+    padding: 8px 4px;
+  }
+
+  .rank-col {
+    width: 35px;
+    font-size: 1rem;
+  }
+
+  .player-col {
+    min-width: 80px;
+    font-size: 0.8rem;
+  }
+
+  .points-col {
+    font-size: 0.95rem;
+  }
+
+  /* Ukryj mniej ważne kolumny na bardzo małych ekranach */
+  .leaderboard-table th:nth-child(n+9),
+  .leaderboard-table td:nth-child(n+9) {
+    display: none;
+  }
+
+  .legend {
+    flex-direction: column;
+    gap: 10px;
+    font-size: 0.85rem;
+  }
+}
