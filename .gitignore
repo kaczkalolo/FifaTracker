@@ -72,3 +72,4 @@ Desktop.ini
 *.db
 *.sqlite
 *.sqlite3
+volumes/

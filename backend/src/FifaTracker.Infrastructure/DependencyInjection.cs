@@ -14,7 +14,7 @@ public static class DependencyInjection
         var port = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
         var database = Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "fifatracker";
         var username = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres";
-        var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres";
+        var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres123!";
 
         var connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password}";
 
