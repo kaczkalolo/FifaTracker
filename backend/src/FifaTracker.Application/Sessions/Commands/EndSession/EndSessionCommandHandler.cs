@@ -27,6 +27,13 @@ public class EndSessionCommandHandler : IRequestHandler<EndSessionCommand, Unit>
 
         await _context.SaveChangesAsync(cancellationToken);
 
+        // Clear all matches that are not completed
+        var incompleteMatches = await _context.Matches
+            .Where(m => m.SessionId == request.SessionId && !m.IsCompleted)
+            .ToListAsync(cancellationToken);
+
+        _context.Matches.RemoveRange(incompleteMatches);
+
         return Unit.Value;
     }
 }
