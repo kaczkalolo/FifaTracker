@@ -243,12 +243,6 @@ function Sessions() {
                     <span className="info-value">{session.participantCount}</span>
                   </div>
                   <div className="info-item">
-                    <span className="info-label">Matches:</span>
-                    <span className="info-value">
-                      {session.completedMatches} / {session.totalMatches}
-                    </span>
-                  </div>
-                  <div className="info-item">
                     <span className="info-label">Started:</span>
                     <span className="info-value">
                       {new Date(session.startDate).toLocaleDateString()}
