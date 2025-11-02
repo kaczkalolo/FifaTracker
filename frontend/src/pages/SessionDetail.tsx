@@ -5,6 +5,19 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import './SessionDetail.css';
 
+interface SessionLeaderboardEntry {
+  userId: string;
+  userName: string;
+  matches: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsScored: number;
+  goalsConceded: number;
+  goalDifference: number;
+  points: number;
+}
+
 function SessionDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -15,6 +28,8 @@ function SessionDetail() {
   const [customMatchError, setCustomMatchError] = useState<string | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showCustomMatch, setShowCustomMatch] = useState(false);
+  const [activeTab, setActiveTab] = useState<'matches' | 'leaderboard'>('matches');
+  const [leaderboardMode, setLeaderboardMode] = useState<'standard' | 'effectiveness'>('standard');
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -145,6 +160,102 @@ function SessionDetail() {
     if (!session) return [];
     const sessionUserIds = session.users.map((u) => u.userId);
     return users.filter((u) => !sessionUserIds.includes(u.id));
+  };
+
+  const calculateSessionLeaderboard = (): SessionLeaderboardEntry[] => {
+    if (!session) return [];
+
+    const stats = new Map<string, SessionLeaderboardEntry>();
+
+    // Initialize stats for all session users
+    session.users.forEach(user => {
+      stats.set(user.userId, {
+        userId: user.userId,
+        userName: user.userName,
+        matches: 0,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        goalsScored: 0,
+        goalsConceded: 0,
+        goalDifference: 0,
+        points: 0,
+      });
+    });
+
+    // Calculate stats from completed matches
+    session.matches.forEach(match => {
+      if (!match.isCompleted || match.team1Score === undefined || match.team2Score === undefined) return;
+
+      const team1Score = match.team1Score;
+      const team2Score = match.team2Score;
+      const isTeam1Win = team1Score > team2Score;
+      const isDraw = team1Score === team2Score;
+
+      // Update team 1 players
+      match.team1Players.forEach(player => {
+        const stat = stats.get(player.userId);
+        if (stat) {
+          stat.matches++;
+          stat.goalsScored += team1Score;
+          stat.goalsConceded += team2Score;
+          if (isTeam1Win) {
+            stat.wins++;
+            stat.points += 3;
+          } else if (isDraw) {
+            stat.draws++;
+            stat.points += 1;
+          } else {
+            stat.losses++;
+          }
+        }
+      });
+
+      // Update team 2 players
+      match.team2Players.forEach(player => {
+        const stat = stats.get(player.userId);
+        if (stat) {
+          stat.matches++;
+          stat.goalsScored += team2Score;
+          stat.goalsConceded += team1Score;
+          if (!isTeam1Win && !isDraw) {
+            stat.wins++;
+            stat.points += 3;
+          } else if (isDraw) {
+            stat.draws++;
+            stat.points += 1;
+          } else {
+            stat.losses++;
+          }
+        }
+      });
+    });
+
+    // Calculate goal difference
+    const entries = Array.from(stats.values());
+    entries.forEach(entry => {
+      entry.goalDifference = entry.goalsScored - entry.goalsConceded;
+    });
+
+    return entries;
+  };
+
+  const calculateEffectiveness = (entry: SessionLeaderboardEntry) => {
+    const maxPoints = entry.matches * 3;
+    return maxPoints > 0 ? entry.points / maxPoints : 0;
+  };
+
+  const getSessionLeaderboard = () => {
+    const entries = calculateSessionLeaderboard();
+    
+    // Both modes use the same sorting: by effectiveness
+    return entries.sort((a, b) => {
+      const effA = calculateEffectiveness(a);
+      const effB = calculateEffectiveness(b);
+      if (effB !== effA) return effB - effA;
+      if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+      return b.goalsScored - a.goalsScored;
+    });
   };
 
   if (loading) return <div className="loading">Loading...</div>;
@@ -310,38 +421,120 @@ function SessionDetail() {
         </div>
       </Modal>
 
-      <div className="session-content">
-        <div className="players-section">
-          <h3>Players ({session.users.length})</h3>
-          <div className="players-list">
-            {session.users.map((user) => (
-              <div key={user.userId} className="player-card">
-                <span>{user.userName}</span>
-                <small>Joined: {new Date(user.joinedAt).toLocaleDateString()}</small>
-              </div>
-            ))}
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === 'matches' ? 'active' : ''}`}
+          onClick={() => setActiveTab('matches')}
+        >
+          Matches ({session.matches.filter(m => m.isCompleted).length}/{session.matches.length})
+        </button>
+        <button
+          className={`tab ${activeTab === 'leaderboard' ? 'active' : ''}`}
+          onClick={() => setActiveTab('leaderboard')}
+        >
+          Leaderboard
+        </button>
+      </div>
+
+      {activeTab === 'matches' ? (
+        <div className="session-content">
+          <div className="matches-section full-width">
+            <div className="matches-list">
+              {session.matches.length === 0 ? (
+                <p className="empty-state">No matches generated yet</p>
+              ) : (
+                session.matches.map((match) => (
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    sessionStatus={session.status}
+                    onUpdateScore={handleUpdateScore}
+                    onDelete={handleDeleteMatch}
+                  />
+                ))
+              )}
+            </div>
           </div>
         </div>
+      ) : (
+        <div className="session-content">
+          <div className="leaderboard-section full-width">
+            <div className="leaderboard-mode-tabs">
+              <button
+                className={`mode-tab ${leaderboardMode === 'standard' ? 'active' : ''}`}
+                onClick={() => setLeaderboardMode('standard')}
+              >
+                Standard Scoring
+              </button>
+              <button
+                className={`mode-tab ${leaderboardMode === 'effectiveness' ? 'active' : ''}`}
+                onClick={() => setLeaderboardMode('effectiveness')}
+              >
+                Effectiveness Scoring
+              </button>
+            </div>
 
-        <div className="matches-section">
-          <h3>Matches ({session.matches.filter(m => m.isCompleted).length}/{session.matches.length})</h3>
-          <div className="matches-list">
-            {session.matches.length === 0 ? (
-              <p className="empty-state">No matches generated yet</p>
-            ) : (
-              session.matches.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  sessionStatus={session.status}
-                  onUpdateScore={handleUpdateScore}
-                  onDelete={handleDeleteMatch}
-                />
-              ))
+            <div className="leaderboard-table-container">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="rank-col">Rank</th>
+                    <th className="player-col">Player</th>
+                    <th>{leaderboardMode === 'standard' ? 'Points' : 'Score'}</th>
+                    {leaderboardMode === 'standard' && <th>Played</th>}
+                    <th className="highlight-col">W</th>
+                    <th>D</th>
+                    <th className="highlight-col">L</th>
+                    {leaderboardMode === 'standard' && <th>Win %</th>}
+                    <th>GS</th>
+                    <th>GC</th>
+                    <th className="highlight-col">GD</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getSessionLeaderboard().map((entry, index) => {
+                    const effectiveness = calculateEffectiveness(entry);
+                    const winRate = entry.matches > 0 ? (entry.wins / entry.matches) * 100 : 0;
+                    const displayValue = leaderboardMode === 'standard' 
+                      ? entry.points 
+                      : effectiveness * 100;
+                    const displayText = leaderboardMode === 'standard' 
+                      ? displayValue.toString() 
+                      : `${displayValue.toFixed(1)}%`;
+                    
+                    return (
+                      <tr key={entry.userId} className={index < 3 ? `top-${index + 1}` : ''}>
+                        <td className="rank-col">
+                          {index === 0 && '🥇'}
+                          {index === 1 && '🥈'}
+                          {index === 2 && '🥉'}
+                          {index > 2 && index + 1}
+                        </td>
+                        <td className="player-col">{entry.userName}</td>
+                        <td className="points-col"><strong>{displayText}</strong></td>
+                        {leaderboardMode === 'standard' && <td className="highlight-col black">{entry.matches}</td>}
+                        <td className="highlight-col wins">{entry.wins}</td>
+                        <td className="highlight-col draws">{entry.draws}</td>
+                        <td className="highlight-col losses">{entry.losses}</td>
+                        {leaderboardMode === 'standard' && <td className="highlight-col black">{winRate.toFixed(1)}%</td>}
+                        <td className="highlight-col black">{entry.goalsScored}</td>
+                        <td className="highlight-col black">{entry.goalsConceded}</td>
+                        <td className={`highlight-col ${entry.goalDifference > 0 ? 'positive' : entry.goalDifference < 0 ? 'negative' : 'black'}`}>
+                          {entry.goalDifference > 0 ? '+' : ''}{entry.goalDifference}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {session.matches.filter(m => m.isCompleted).length === 0 && (
+              <p className="empty-state">No completed matches yet. Play some matches to see the leaderboard!</p>
             )}
           </div>
         </div>
-      </div>
+      )}
 
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
