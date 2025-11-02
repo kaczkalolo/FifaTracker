@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { showToast } from '../components/ToastContainer';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -8,6 +9,20 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message = error.response?.data?.message 
+      || error.response?.data?.title
+      || error.message 
+      || 'Network error. Please check your connection.';
+    
+    showToast(message, 'error');
+    return Promise.reject(error);
+  }
+);
 
 // Types
 export interface User {

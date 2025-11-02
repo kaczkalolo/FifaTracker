@@ -4,6 +4,7 @@ import Users from './pages/Users';
 import Sessions from './pages/Sessions';
 import SessionDetail from './pages/SessionDetail';
 import Leaderboard from './pages/Leaderboard';
+import ToastContainer from './components/ToastContainer';
 import './App.css';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
   return (
     <Router>
       <div className="app">
+        <ToastContainer />
         <nav className="navbar">
           <div className="nav-container">
             <h1 className="nav-title">⚽ FIFA Tracker</h1>
