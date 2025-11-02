@@ -50,7 +50,6 @@ public class AddUserToSessionCommandHandler : IRequestHandler<AddUserToSessionCo
         if (request.GenerateMissingMatches)
         {
             var allUserIds = session.SessionUsers.Select(su => su.UserId).ToList();
-            allUserIds.Add(request.UserId);
 
             var allMatches = _matchGenerator.GenerateMatches(session.Id, allUserIds, session.MatchType);
             var existingMatches = await _context.Matches
