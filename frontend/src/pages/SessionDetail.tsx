@@ -30,6 +30,11 @@ function SessionDetail() {
   const [showCustomMatch, setShowCustomMatch] = useState(false);
   const [activeTab, setActiveTab] = useState<'matches' | 'leaderboard'>('matches');
   const [leaderboardMode, setLeaderboardMode] = useState<'standard' | 'effectiveness'>('standard');
+  const [showCompleted, setShowCompleted] = useState(true);
+  const [showPending, setShowPending] = useState(true);
+  const [showGenerated, setShowGenerated] = useState(true);
+  const [showCustom, setShowCustom] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -258,6 +263,55 @@ function SessionDetail() {
     });
   };
 
+  const getFilteredAndSortedMatches = () => {
+    if (!session) return [];
+
+    let filtered = session.matches;
+
+    // Apply status filters
+    filtered = filtered.filter(m => {
+      if (m.isCompleted && !showCompleted) return false;
+      if (!m.isCompleted && !showPending) return false;
+      return true;
+    });
+
+    // Apply type filters
+    filtered = filtered.filter(m => {
+      if (m.isGenerated && !showGenerated) return false;
+      if (!m.isGenerated && !showCustom) return false;
+      return true;
+    });
+
+    // Apply sorting: pending first (custom → generated), then completed (oldest → newest)
+    const sorted = [...filtered];
+    sorted.sort((a, b) => {
+      // Pending matches first
+      if (a.isCompleted !== b.isCompleted) {
+        return a.isCompleted ? 1 : -1;
+      }
+      
+      // Within pending: custom first, then generated
+      if (!a.isCompleted && !b.isCompleted) {
+        if (a.isGenerated !== b.isGenerated) {
+          return a.isGenerated ? 1 : -1; // custom (!isGenerated) first
+        }
+        return 0;
+      }
+      
+      // Within completed: oldest first (by playedAt)
+      if (a.isCompleted && b.isCompleted) {
+        if (a.playedAt && b.playedAt) {
+          return new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime();
+        }
+        return 0;
+      }
+      
+      return 0;
+    });
+
+    return sorted;
+  };
+
   if (loading) return <div className="loading">Loading...</div>;
   if (!session) return <div className="error-message">Session not found</div>;
 
@@ -439,11 +493,70 @@ function SessionDetail() {
       {activeTab === 'matches' ? (
         <div className="session-content">
           <div className="matches-section full-width">
+            <div className="matches-controls">
+              <button 
+                className="filters-toggle"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                {showFilters ? '▼' : '▶'} Filters & Sort
+              </button>
+              
+              {showFilters && (
+                <div className="matches-filters">
+                  <div className="filter-section">
+                    <h4>Show Status:</h4>
+                    <div className="checkbox-group">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={showCompleted}
+                          onChange={(e) => setShowCompleted(e.target.checked)}
+                        />
+                        <span>Completed ({session.matches.filter(m => m.isCompleted).length})</span>
+                      </label>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={showPending}
+                          onChange={(e) => setShowPending(e.target.checked)}
+                        />
+                        <span>Pending ({session.matches.filter(m => !m.isCompleted).length})</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="filter-section">
+                    <h4>Show Type:</h4>
+                    <div className="checkbox-group">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={showGenerated}
+                          onChange={(e) => setShowGenerated(e.target.checked)}
+                        />
+                        <span>Generated ({session.matches.filter(m => m.isGenerated).length})</span>
+                      </label>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={showCustom}
+                          onChange={(e) => setShowCustom(e.target.checked)}
+                        />
+                        <span>Custom ({session.matches.filter(m => !m.isGenerated).length})</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="matches-list">
               {session.matches.length === 0 ? (
                 <p className="empty-state">No matches generated yet</p>
+              ) : getFilteredAndSortedMatches().length === 0 ? (
+                <p className="empty-state">No matches match the selected filters</p>
               ) : (
-                session.matches.map((match) => (
+                getFilteredAndSortedMatches().map((match) => (
                   <MatchCard
                     key={match.id}
                     match={match}
@@ -595,60 +708,59 @@ function MatchCard({ match, sessionStatus, onUpdateScore, onDelete }: MatchCardP
         </span>
         {match.isCompleted && match.playedAt && (
           <span className="match-date">
-            {new Date(match.playedAt).toLocaleDateString()}
+            {new Date(match.playedAt).toLocaleTimeString()}
           </span>
         )}
       </div>
 
       <div className="match-content">
         <div className="team team-1">
-          <div className="team-label">Team 1</div>
           <div className="team-players">{team1Names}</div>
         </div>
 
         <div className="match-score-section">
           <div className="score-display">
             {match.isCompleted ? (
-              <>
-                <div className="score-value">
-                  {match.team1Score} : {match.team2Score}
-                </div>
-                {isSessionActive && (
-                  <button
-                    onClick={openScoreModal}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    ✏️ Edit
-                  </button>
-                )}
-              </>
+              <div className="score-value">
+                {match.team1Score} : {match.team2Score}
+              </div>
             ) : (
-              isSessionActive && (
-                <button
-                  onClick={openScoreModal}
-                  className="btn btn-primary btn-sm"
-                >
-                  ➕ Add Score
-                </button>
-              )
-            )}
-            {isSessionActive && (
-              <button
-                onClick={() => onDelete(match.id)}
-                className="btn btn-danger btn-sm"
-                title="Delete match"
-              >
-                🗑️ Delete
-              </button>
+              <div className="score-value pending-text">vs</div>
             )}
           </div>
         </div>
 
         <div className="team team-2">
-          <div className="team-label">Team 2</div>
           <div className="team-players">{team2Names}</div>
         </div>
       </div>
+
+      {isSessionActive && (
+        <div className="match-actions">
+          {match.isCompleted ? (
+            <button
+              onClick={openScoreModal}
+              className="btn btn-secondary btn-sm"
+            >
+              ✏️ Edit Score
+            </button>
+          ) : (
+            <button
+              onClick={openScoreModal}
+              className="btn btn-primary btn-sm"
+            >
+              ➕ Add Score
+            </button>
+          )}
+          <button
+            onClick={() => onDelete(match.id)}
+            className="btn btn-danger btn-sm"
+            title="Delete match"
+          >
+            🗑️ Delete
+          </button>
+        </div>
+      )}
 
       <Modal
         isOpen={showScoreModal}
