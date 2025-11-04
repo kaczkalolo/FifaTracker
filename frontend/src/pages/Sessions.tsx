@@ -13,7 +13,6 @@ function Sessions() {
   const [newSession, setNewSession] = useState({
     matchType: 'OneVsOne',
     selectedUsers: [] as string[],
-    generateMatches: true,
   });
 
   const generateSessionName = () => {
@@ -68,11 +67,10 @@ function Sessions() {
       await sessionsApi.create(
         sessionName,
         newSession.matchType,
-        newSession.selectedUsers,
-        newSession.generateMatches
+        newSession.selectedUsers
       );
       setShowCreateModal(false);
-      setNewSession({ matchType: 'OneVsOne', selectedUsers: [], generateMatches: true });
+      setNewSession({ matchType: 'OneVsOne', selectedUsers: [] });
       setError(null);
       loadSessions();
     } catch (err: any) {
@@ -160,17 +158,6 @@ function Sessions() {
                 </label>
               ))}
             </div>
-          </div>
-
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={newSession.generateMatches}
-                onChange={(e) => setNewSession({ ...newSession, generateMatches: e.target.checked })}
-              />
-              <span>Generate matches automatically</span>
-            </label>
           </div>
 
           <div className="modal-actions">

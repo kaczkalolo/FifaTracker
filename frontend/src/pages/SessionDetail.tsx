@@ -42,7 +42,6 @@ function SessionDetail() {
     onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [selectedUserId, setSelectedUserId] = useState('');
-  const [generateMatches, setGenerateMatches] = useState(true);
   const [customMatch, setCustomMatch] = useState({
     team1: [] as string[],
     team2: [] as string[],
@@ -102,6 +101,19 @@ function SessionDetail() {
     });
   };
 
+  const handleGenerateMoreMatches = async () => {
+    if (!id) return;
+    try {
+      const response = await sessionsApi.generateMoreMatches(id, 5);
+      loadSession();
+      if (response.data.generatedCount > 0) {
+        console.log(`Generated ${response.data.generatedCount} new matches`);
+      }
+    } catch (err: any) {
+      console.error('Failed to generate more matches:', err);
+    }
+  };
+
   const handleEndSession = () => {
     if (!id) return;
     setConfirmDialog({
@@ -122,7 +134,7 @@ function SessionDetail() {
   const handleAddUser = async () => {
     if (!id || !selectedUserId) return;
     try {
-      await sessionsApi.addUser(id, selectedUserId, generateMatches);
+      await sessionsApi.addUser(id, selectedUserId);
       setShowAddUser(false);
       setSelectedUserId('');
       setAddUserError(null);
@@ -290,12 +302,13 @@ function SessionDetail() {
         return a.isCompleted ? 1 : -1;
       }
       
-      // Within pending: custom first, then generated
+      // Within pending: custom first, then generated (sorted by createdAt)
       if (!a.isCompleted && !b.isCompleted) {
         if (a.isGenerated !== b.isGenerated) {
           return a.isGenerated ? 1 : -1; // custom (!isGenerated) first
         }
-        return 0;
+        // Within same type (both generated or both custom), sort by createdAt (oldest first)
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       }
       
       // Within completed: oldest first (by playedAt)
@@ -343,6 +356,13 @@ function SessionDetail() {
                 <span className="btn-icon">⚽</span>
                 <span className="btn-text">Custom Match</span>
               </button>
+              <button
+                onClick={handleGenerateMoreMatches}
+                className="btn btn-success btn-icon-mobile"
+              >
+                <span className="btn-icon">🔄</span>
+                <span className="btn-text">Generate Matches</span>
+              </button>
               <button onClick={handleEndSession} className="btn btn-danger btn-icon-mobile">
                 <span className="btn-icon">🛑</span>
                 <span className="btn-text">End Session</span>
@@ -382,16 +402,6 @@ function SessionDetail() {
                 </option>
               ))}
             </select>
-          </div>
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={generateMatches}
-                onChange={(e) => setGenerateMatches(e.target.checked)}
-              />
-              <span>Generate missing matches with this player</span>
-            </label>
           </div>
           <div className="modal-actions">
             <button 
