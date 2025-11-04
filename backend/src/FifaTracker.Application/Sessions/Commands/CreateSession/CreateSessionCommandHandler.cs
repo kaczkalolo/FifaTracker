@@ -90,14 +90,20 @@ public class CreateSessionCommandHandler : IRequestHandler<CreateSessionCommand,
             _context.SessionUsers.Add(sessionUser);
         }
 
-        // Generate matches if requested
-        if (request.GenerateMatches)
+        // Generate initial 5 matches using smart generation
+        var userJoinTimes = request.UserIds.ToDictionary(id => id, id => DateTime.UtcNow);
+        var matches = _matchGenerator.GenerateSmartMatches(
+            session.Id, 
+            request.UserIds, 
+            request.MatchType, 
+            5, // Target 5 matches on session start
+            new List<Match>(), 
+            userJoinTimes, 
+            session.StartDate);
+        
+        foreach (var match in matches)
         {
-            var matches = _matchGenerator.GenerateMatches(session.Id, request.UserIds, request.MatchType);
-            foreach (var match in matches)
-            {
-                _context.Matches.Add(match);
-            }
+            _context.Matches.Add(match);
         }
 
         await _context.SaveChangesAsync(cancellationToken);

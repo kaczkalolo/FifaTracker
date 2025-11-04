@@ -1,6 +1,7 @@
 using FifaTracker.Application.Sessions.Commands.AddUserToSession;
 using FifaTracker.Application.Sessions.Commands.CreateSession;
 using FifaTracker.Application.Sessions.Commands.EndSession;
+using FifaTracker.Application.Sessions.Commands.GenerateMoreMatches;
 using FifaTracker.Application.Sessions.Queries.GetActiveSessions;
 using FifaTracker.Application.Sessions.Queries.GetAllSessions;
 using FifaTracker.Application.Sessions.Queries.GetSessionDetails;
@@ -59,7 +60,18 @@ public class SessionsController : ControllerBase
     [HttpPost("{id}/users")]
     public async Task<ActionResult> AddUser(Guid id, [FromBody] AddUserRequest request)
     {
-        await _mediator.Send(new AddUserToSessionCommand(id, request.UserId, request.GenerateMissingMatches));
+        await _mediator.Send(new AddUserToSessionCommand(id, request.UserId));
         return NoContent();
+    }
+
+    [HttpPost("{id}/generate-matches")]
+    public async Task<ActionResult<int>> GenerateMoreMatches(Guid id, [FromBody] GenerateMatchesRequest? request)
+    {
+        var count = await _mediator.Send(new GenerateMoreMatchesCommand 
+        { 
+            SessionId = id, 
+            TargetCount = request?.TargetCount ?? 5 
+        });
+        return Ok(new { generatedCount = count });
     }
 }

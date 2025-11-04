@@ -70,6 +70,7 @@ export interface Match {
   id: string;
   isGenerated: boolean;
   isCompleted: boolean;
+  createdAt: string;
   team1Score?: number;
   team2Score?: number;
   playedAt?: string;
@@ -112,11 +113,13 @@ export const sessionsApi = {
   getAll: () => api.get<SessionSummary[]>('/sessions'),
   getActive: () => api.get<SessionSummary[]>('/sessions/active'),
   getById: (id: string) => api.get<SessionDetails>(`/sessions/${id}`),
-  create: (name: string, matchType: string, userIds: string[], generateMatches: boolean = true) =>
-    api.post<string>('/sessions', { Name: name, MatchType: matchType, UserIds: userIds, GenerateMatches: generateMatches }),
+  create: (name: string, matchType: string, userIds: string[]) =>
+    api.post<string>('/sessions', { Name: name, MatchType: matchType, UserIds: userIds }),
   end: (id: string) => api.post(`/sessions/${id}/end`),
-  addUser: (id: string, userId: string, generateMissingMatches: boolean) =>
-    api.post(`/sessions/${id}/users`, { UserId: userId, GenerateMissingMatches: generateMissingMatches }),
+  addUser: (id: string, userId: string) =>
+    api.post(`/sessions/${id}/users`, { UserId: userId }),
+  generateMoreMatches: (id: string, targetCount: number = 5) =>
+    api.post<{ generatedCount: number }>(`/sessions/${id}/generate-matches`, { TargetCount: targetCount }),
 };
 
 // Matches API
